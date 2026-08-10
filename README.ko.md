@@ -32,7 +32,11 @@
 npx skills add https://github.com/MiniMax-AI/MiniMax-H3 --skill h3-prompt-writing
 ```
 
-이 스킬은 `skills/h3-prompt-writing/references/` 아래에 두 개의 프롬프트 가이드를 제공합니다. `base-en.txt`는 텍스트/키프레임 모드용이고, `ref-en.txt`는 전체 참조(Ref2VA) 모드용입니다. 나머지 여덟 개는 스타일별 비디오 생성 스킬입니다:
+이 스킬은 `skills/h3-prompt-writing/references/` 아래에 두 개의 프롬프트 가이드를 제공합니다. `base-en.txt`는 텍스트/키프레임 모드용이고, `ref-en.txt`는 전체 참조(Ref2VA) 모드용입니다.
+
+**에이전트 호환성:** `h3-prompt-writing`은 외부 API 호출이 없는 순수 Markdown + 참조 파일 스킬이므로 Claude Code, Claude Agent SDK, Cursor, Windsurf, OpenAI 기반 에이전트/Codex, LangChain 등 `SKILL.md`와 로컬 파일을 읽을 수 있는 모든 환경에서 동작합니다. 함께 제공되는 `skills/h3-prompt-writing/agents/openai.yaml`은 [OpenAI의 스킬 사양](https://learn.chatgpt.com/docs/build-skills)에 따라 ChatGPT/Codex 스킬 UI를 위한 선택적 UI 메타데이터(표시 이름, 설명, 기본 프롬프트)만 추가할 뿐, 이 스킬을 OpenAI 에이전트로 제한하지 않습니다.
+
+나머지 여덟 개는 MiniMax Hub의 캔버스 워크플로(`hub_generate_video`, `hub_generate_image`, 캔버스 노드, 선택 카드 등)를 위해 만들어진 스타일별 비디오 생성 스킬로, 범용 에이전트 환경으로 이식할 수 없습니다:
 
 <table align="center">
   <tr>

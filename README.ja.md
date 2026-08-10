@@ -32,7 +32,11 @@
 npx skills add https://github.com/MiniMax-AI/MiniMax-H3 --skill h3-prompt-writing
 ```
 
-このスキルには `skills/h3-prompt-writing/references/` 配下に 2 つのプロンプトガイドが含まれています。`base-en.txt` はテキスト/キーフレームモード用、`ref-en.txt` はフルリファレンス（Ref2VA）モード用です。残りの 8 つはスタイル別の動画生成スキルです:
+このスキルには `skills/h3-prompt-writing/references/` 配下に 2 つのプロンプトガイドが含まれています。`base-en.txt` はテキスト/キーフレームモード用、`ref-en.txt` はフルリファレンス（Ref2VA）モード用です。
+
+**エージェント互換性：** `h3-prompt-writing` は外部 API 呼び出しを行わない、純粋な Markdown + リファレンスファイルのスキルです。そのため、Claude Code、Claude Agent SDK、Cursor、Windsurf、OpenAI ベースのエージェント/Codex、LangChain など、`SKILL.md` とローカルファイルを読み取れるあらゆる環境で動作します。同梱されている `skills/h3-prompt-writing/agents/openai.yaml` は、[OpenAI のスキル仕様](https://learn.chatgpt.com/docs/build-skills) に基づき、ChatGPT/Codex のスキル UI 向けに任意の UI メタデータ（表示名、説明、デフォルトプロンプト）を追加するだけであり、このスキルを OpenAI エージェント専用に制限するものではありません。
+
+残りの 8 つは、MiniMax Hub のキャンバスワークフロー（`hub_generate_video`、`hub_generate_image`、キャンバスノード、選択カードなど）向けに構築されたスタイル別の動画生成スキルであり、汎用のエージェント実行環境には移植できません:
 
 <table align="center">
   <tr>
