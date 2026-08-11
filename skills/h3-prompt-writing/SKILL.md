@@ -33,3 +33,8 @@ Read `references/ref-en.txt` for label rules, retention analysis, and complete e
 - Write rewrite sections in English; preserve dialogue, lyrics, and visible scene text in their original language.
 - Describe each shot by composition, subjects, environment, actions, camera, sound, and the exact point where referenced content appears.
 - Avoid plot summaries, unresolved reference labels, and timing that does not match the requested duration.
+## Tips for Better Results
+- Always match the total duration of the description to the requested video length (4–15 seconds).
+- Keep reference labels consistent (e.g. `<Picture 1>`, `<Video 1>`, `<Audio 1>`) across every section.
+- Prefer concrete visual and audio details over abstract words like "cinematic" or "beautiful".
+- When using keyframes (I2VA / FL2VA / L2VA), clearly state how the first and/or last frame connects to the timeline.
