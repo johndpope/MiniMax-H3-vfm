@@ -267,7 +267,7 @@ The following three use cases T2VA, FL2VA, and Ref2VA demonstrate how to reprodu
 | FL2VA | [View script](scripts/readme/reproducible-768p-fl2va-request.sh) | [fl2va.mp4](assets/fl2va.mp4) |
 | Ref2VA | [View script](scripts/readme/reproducible-768p-ref2va-request.sh) | [ref2va.mp4](assets/ref2va.mp4) |
 
-### Full 2K\-Workflow
+### Full 2K Workflow
 
 This section explains how to combine a locally deployed SGLang service with the official **H3\-Context\-IR** and **H3\-Regenerate\-2K** APIs to reproduce the quality of 2K videos generated directly by the MiniMax API\.
 Before you begin, configure the SGLang endpoint and your MiniMax API credentials:
