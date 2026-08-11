@@ -267,6 +267,28 @@ The following three use cases T2VA, FL2VA, and Ref2VA demonstrate how to reprodu
 | FL2VA | [View script](scripts/readme/reproducible-768p-fl2va-request.sh) | [fl2va.mp4](assets/fl2va.mp4) |
 | Ref2VA | [View script](scripts/readme/reproducible-768p-ref2va-request.sh) | [ref2va.mp4](assets/ref2va.mp4) |
 
+#### Using a local image/video instead of a remote URL
+
+The reproducible scripts above reference `conditions[].uri` values hosted on a public CDN so they work out of the box, but `uri` is not limited to `http(s)://`. For local testing you can point it at a `file://` path instead — for example, to swap the FL2VA keyframe for your own image:
+
+```json
+"conditions": [
+  {
+    "type": "image",
+    "uri": "file:///data/minimax-h3/my-keyframe.png",
+    "role": "keyframe",
+    "frame_index": 0
+  }
+]
+```
+
+The path is resolved by the SGLang server process, not by the machine running `curl`, so it must point to a file the server can actually see:
+
+- If `sglang serve` runs natively on the host, any absolute path readable by that process works.
+- If it runs in a container, the file must live inside a directory you mounted into the container (e.g. mount a host folder to `/data/minimax-h3` and reference `file:///data/minimax-h3/...`).
+
+See the [MiniMax-H3 SGLang cookbook](https://docs.sglang.io/cookbook/diffusion/MiniMax/MiniMax-H3) for the full list of supported condition/media options.
+
 ### Full 2K Workflow
 
 This section explains how to combine a locally deployed SGLang service with the official **H3\-Context\-IR** and **H3\-Regenerate\-2K** APIs to reproduce the quality of 2K videos generated directly by the MiniMax API\.
