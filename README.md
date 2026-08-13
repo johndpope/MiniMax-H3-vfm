@@ -54,13 +54,13 @@ The remaining eight are style-specific video generation skills built for the Min
 </table>
 
 ## Online API
-Use MiniMax\-H3 directly via API\. 
-- Global: [platform\.minimax\.io](https://platform.minimax.io/docs/api-reference/video-generation-v2-create) \| CN: [platform\.minimaxi\.com](https://platform.minimaxi.com/docs/api-reference/video-generation-v2-create)
+Use MiniMax-H3 directly via API. 
+- Global: [platform.minimax.io](https://platform.minimax.io/docs/api-reference/video-generation-v2-create) | CN: [platform.minimaxi.com](https://platform.minimaxi.com/docs/api-reference/video-generation-v2-create)
 
 ## Online App
-Use MiniMax\-H3 directly via App\.
-- WebApp Global: [hailuoai\.video](https://hailuoai.video/tools/minimax-h3) \| CN: [hailuoai\.com](https://hailuoai.com/)
-- Desktop Global: [hub\.minimax\.io](https://hub.minimax.io/) \| CN: [hub\.minimaxi\.com](https://hub.minimaxi.com/)
+Use MiniMax-H3 directly via App.
+- WebApp Global: [hailuoai.video](https://hailuoai.video/tools/minimax-h3) | CN: [hailuoai.com](https://hailuoai.com/)
+- Desktop Global: [hub.minimax.io](https://hub.minimax.io/) | CN: [hub.minimaxi.com](https://hub.minimaxi.com/)
 
 
 ## System Overview
