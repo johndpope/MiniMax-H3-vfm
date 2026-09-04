@@ -17,10 +17,13 @@ This file is the cheapest falsifier of that claim:
   2. H3NoiseAdapter — qφ, dual heads (24-ch video / 32-ch audio).
   3. vfm_loss / one_step — train + measure.
 
+qφ is diagonal Gaussian, same family H3 samples at t=1:
+  z = μ(y) + exp(logσ(y)) ⊙ ε,  ε ~ N(0, I)
+
 Run
 ---
     WANDB_MODE=offline python scripts/vfm/h3_vfm.py
-    WANDB_MODE=offline python scripts/vfm/h3_vfm.py --steps 200 --spherical --device cuda
+    WANDB_MODE=offline python scripts/vfm/h3_vfm.py --steps 200 --device cuda
 
 Success bar (toy): recon drops while KL stays bounded; audio recon does not
 explode relative to video (the dual-clock failure mode).
@@ -50,18 +53,6 @@ TASK = {"t2va": 0, "i2va": 1, "fl2va": 2, "ref2va": 3, "talking_head": 4}
 def shift_sigma(t: torch.Tensor, shift: float) -> torch.Tensor:
     # t = 1 (noise) → 0 (data). H3 released shifts: video 12, audio 3.
     return shift * t / (1.0 + (shift - 1.0) * t)
-
-
-def normalize(x: torch.Tensor, dim: int = -1, eps: float = 1e-8) -> torch.Tensor:
-    return x / x.norm(dim=dim, keepdim=True).clamp_min(eps)
-
-
-def sample_spherical_cauchy(mu_hat: torch.Tensor, kappa: torch.Tensor) -> torch.Tensor:
-    direction = normalize(mu_hat)
-    eps = torch.randn_like(direction)
-    tangent = eps - (eps * direction).sum(dim=-1, keepdim=True) * direction
-    scale = (1.0 / kappa.clamp_min(1e-3).unsqueeze(-1).to(tangent.dtype)).sqrt()
-    return normalize(direction + tangent * scale)
 
 
 def kl_to_standard_normal(mu: torch.Tensor, log_sigma: torch.Tensor) -> torch.Tensor:
@@ -107,7 +98,7 @@ class _Block(nn.Module):
 
 
 class H3NoiseAdapter(nn.Module):
-    """Per-token μ, logσ, κ for video rows and audio rows."""
+    """Per-token diagonal Gaussian qφ(z|y): μ, logσ for video and audio rows."""
 
     def __init__(self, text_dim=H3_TEXT_DIM, hidden=256, heads=4, layers=2, pos_dim=128):
         super().__init__()
@@ -120,15 +111,11 @@ class H3NoiseAdapter(nn.Module):
         self.norm = nn.LayerNorm(hidden)
         self.v_mu = nn.Linear(hidden, H3_VIDEO_CH)
         self.v_log = nn.Linear(hidden, H3_VIDEO_CH)
-        self.v_kap = nn.Linear(hidden, 1)
         self.a_mu = nn.Linear(hidden, H3_AUDIO_CH)
         self.a_log = nn.Linear(hidden, H3_AUDIO_CH)
-        self.a_kap = nn.Linear(hidden, 1)
         for lin in (self.v_mu, self.v_log, self.a_mu, self.a_log):
             nn.init.zeros_(lin.weight)
             nn.init.zeros_(lin.bias)
-        nn.init.constant_(self.v_kap.bias, 2.0)
-        nn.init.constant_(self.a_kap.bias, 2.0)
 
     def forward(self, text, text_mask, pos, task, modality):
         B, S, _ = pos.shape
@@ -151,22 +138,14 @@ class H3NoiseAdapter(nn.Module):
         return {
             "v_mu": self.v_mu(x) * v_sel,
             "v_log": self.v_log(x).clamp(-1, 2) * v_sel,
-            "v_kappa": F.softplus(self.v_kap(x)).squeeze(-1) + 0.1,
             "a_mu": self.a_mu(x) * a_sel,
             "a_log": self.a_log(x).clamp(-1, 2) * a_sel,
-            "a_kappa": F.softplus(self.a_kap(x)).squeeze(-1) + 0.1,
         }
 
-    def sample(self, text, text_mask, pos, task, modality, spherical=True, temperature=1.0):
+    def sample(self, text, text_mask, pos, task, modality, temperature=1.0):
         o = self.forward(text, text_mask, pos, task, modality)
-        if spherical:
-            z_v = sample_spherical_cauchy(normalize(o["v_mu"] + 1e-6), o["v_kappa"])
-            z_v = z_v * torch.exp(o["v_log"]).mean(-1, keepdim=True) * temperature
-            z_a = sample_spherical_cauchy(normalize(o["a_mu"] + 1e-6), o["a_kappa"])
-            z_a = z_a * torch.exp(o["a_log"]).mean(-1, keepdim=True) * temperature
-        else:
-            z_v = o["v_mu"] + torch.exp(o["v_log"]) * torch.randn_like(o["v_mu"]) * temperature
-            z_a = o["a_mu"] + torch.exp(o["a_log"]) * torch.randn_like(o["a_mu"]) * temperature
+        z_v = o["v_mu"] + torch.exp(o["v_log"]) * torch.randn_like(o["v_mu"]) * temperature
+        z_a = o["a_mu"] + torch.exp(o["a_log"]) * torch.randn_like(o["a_mu"]) * temperature
         o["kl_v"] = kl_to_standard_normal(o["v_mu"], o["v_log"])
         o["kl_a"] = kl_to_standard_normal(o["a_mu"], o["a_log"])
         return z_v, z_a, o
@@ -306,9 +285,9 @@ def split_rows(z_v_rows, z_a_rows, Sv, Sa):
     return z_v_rows[:, :Sv], z_a_rows[:, Sv : Sv + Sa]
 
 
-def vfm_loss(adapter, fmap, batch: PackedBatch, spherical=True, kl_w=1e-3, audio_kl_w=3e-3):
+def vfm_loss(adapter, fmap, batch: PackedBatch, kl_w=1e-3, audio_kl_w=3e-3):
     z_rows_v, z_rows_a, stats = adapter.sample(
-        batch.text, batch.text_mask, batch.pos, batch.task, batch.modality, spherical=spherical
+        batch.text, batch.text_mask, batch.pos, batch.task, batch.modality
     )
     z_v, _ = split_rows(z_rows_v, z_rows_v, batch.Sv, batch.Sa)
     _, z_a = split_rows(z_rows_a, z_rows_a, batch.Sv, batch.Sa)
@@ -326,13 +305,15 @@ def vfm_loss(adapter, fmap, batch: PackedBatch, spherical=True, kl_w=1e-3, audio
         "kl_a": float(stats["kl_a"].detach()),
         "z_v_std": float(z_v.std().detach()),
         "z_a_std": float(z_a.std().detach()),
+        "mu_v_norm": float(stats["v_mu"].norm(dim=-1).mean().detach()),
+        "mu_a_norm": float(stats["a_mu"].norm(dim=-1).mean().detach()),
     }
 
 
 @torch.no_grad()
-def evaluate(adapter, fmap, batch, spherical=True):
+def evaluate(adapter, fmap, batch):
     adapter.eval()
-    _, metrics = vfm_loss(adapter, fmap, batch, spherical=spherical)
+    _, metrics = vfm_loss(adapter, fmap, batch)
     # Gaussian-init baseline on the same map (the thing VFM has to beat).
     z_v = torch.randn_like(batch.x0_v)
     z_a = torch.randn_like(batch.x0_a)
@@ -344,7 +325,7 @@ def evaluate(adapter, fmap, batch, spherical=True):
     return metrics
 
 
-def train(steps=150, lr=2e-3, spherical=True, device="cpu", seed=0, wandb_run=None):
+def train(steps=150, lr=2e-3, device="cpu", seed=0, wandb_run=None):
     torch.manual_seed(seed)
     adapter = H3NoiseAdapter(text_dim=H3_TEXT_DIM).to(device)
     fmap = ToyPackedMap(text_dim=H3_TEXT_DIM).to(device)
@@ -356,16 +337,17 @@ def train(steps=150, lr=2e-3, spherical=True, device="cpu", seed=0, wandb_run=No
     history = []
     for i in range(1, steps + 1):
         opt.zero_grad(set_to_none=True)
-        loss, m = vfm_loss(adapter, fmap, batch, spherical=spherical)
+        loss, m = vfm_loss(adapter, fmap, batch)
         loss.backward()
         opt.step()
         if i == 1 or i % 25 == 0 or i == steps:
-            ev = evaluate(adapter, fmap, batch, spherical=spherical)
+            ev = evaluate(adapter, fmap, batch)
             history.append((i, ev))
             print(
                 f"step {i:4d}  recon_v {ev['recon_v']:.4f} (base {ev['base_recon_v']:.4f})  "
                 f"recon_a {ev['recon_a']:.4f} (base {ev['base_recon_a']:.4f})  "
-                f"kl_v {ev['kl_v']:.4f}  kl_a {ev['kl_a']:.4f}",
+                f"kl_v {ev['kl_v']:.4f}  kl_a {ev['kl_a']:.4f}  "
+                f"||μ_v|| {ev['mu_v_norm']:.4f}  ||μ_a|| {ev['mu_a_norm']:.4f}",
                 flush=True,
             )
             if wandb_run is not None:
@@ -395,8 +377,6 @@ def main():
     ap = argparse.ArgumentParser(description="Isolated VFM validation (no SCD, no 33B)")
     ap.add_argument("--steps", type=int, default=150)
     ap.add_argument("--lr", type=float, default=2e-3)
-    ap.add_argument("--spherical", action="store_true", default=True)
-    ap.add_argument("--gaussian", dest="spherical", action="store_false")
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--wandb-project", default="h3-vfm")
@@ -413,7 +393,7 @@ def main():
         config={
             "steps": args.steps,
             "lr": args.lr,
-            "spherical": args.spherical,
+            "qphi": "diagonal_gaussian",
             "device": args.device,
             "seed": args.seed,
             "text_dim": H3_TEXT_DIM,
@@ -428,7 +408,6 @@ def main():
         train(
             steps=args.steps,
             lr=args.lr,
-            spherical=args.spherical,
             device=args.device,
             seed=args.seed,
             wandb_run=run,
