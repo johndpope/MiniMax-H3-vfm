@@ -234,9 +234,16 @@ Stop when the 1-NFE vector plateaus and the constraint rows still hold. Keep the
 | `train/stage_a_vfm.py` | Stage A argparse and TODOs |
 | `train/stage_b_fd_turbo.py` | Stage B argparse and TODOs |
 | `train/stage_c_canvas_fd.py` | Optional canvas FD argparse and TODOs |
+| `train/stage_b_particle_merge.py` | Test-time 1-NFE particle-merge stub (`--check` only) |
+| `docs/INTERFERENCE_VIDEO.md` | Why merge in FD-tower space |
+| `docs/STAGE_B_PARTICLE_MERGE.md` | Stage B particle-merge experiment |
 | `VFM.md` | Short pointer |
 
 `python train/stage_a_vfm.py --check` (and the Stage B / C equivalents) runs the numeric self-checks and the on-disk wiring checks. `--run` stops on the TODO. It does not load a checkpoint.
+
+## Related: test-time search
+
+Stage B training is still one 1-NFE draw plus FD-loss. A separate test-time experiment spends a budget of those draws as a merged frontier. [INTERFERENCE_VIDEO.md](INTERFERENCE_VIDEO.md) maps Interference Search onto this stack. [STAGE_B_PARTICLE_MERGE.md](STAGE_B_PARTICLE_MERGE.md) is the experiment. Neither changes `vfm_nfe_loss`, the FD update, or the package name `vfm_fd`.
 
 ## Out of scope
 

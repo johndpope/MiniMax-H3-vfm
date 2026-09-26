@@ -24,6 +24,7 @@ from vfm_fd.constants import (
 )
 from vfm_fd.ema import ParameterEMA
 from vfm_fd.losses import NFE_WEIGHTS, observation_loss, total_loss, vfm_nfe_loss
+from vfm_fd.particles import frontier_step
 from vfm_fd.schedule import AnnealPhase, fd_weight_for_k, stage_a_ks
 
 __all__ = [
@@ -41,6 +42,7 @@ __all__ = [
     "VAE_CLIP_LENGTH",
     "apply_unconditional_mix",
     "fd_weight_for_k",
+    "frontier_step",
     "kl_standard_normal",
     "NFE_WEIGHTS",
     "observation_loss",

@@ -86,3 +86,7 @@ def run_selfcheck(root: Path | None = None) -> None:
 
     if TASK["ref2va"] != 3:
         raise AssertionError("ref2va task id drifted from scripts/vfm/h3_vfm.py")
+
+    from vfm_fd.particles import run_selfcheck as particle_check
+
+    particle_check()
