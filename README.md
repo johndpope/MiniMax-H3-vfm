@@ -24,6 +24,10 @@
 
 # MiniMax H3
 
+## VFM × FD-loss (few-NFE)
+
+This fork adds a few-step Ref2VA design: a noise adapter chooses the initial noise, a thin LoRA is the flow map, and FD-loss post-trains that LoRA at 1 NFE. Read [VFM.md](VFM.md) and [docs/VFM_FD_REDESIGN.md](docs/VFM_FD_REDESIGN.md). The upstream H3 checkpoints and the rest of this README are unchanged.
+
 ## Prompt Writing Skill
 
 Install the H3 prompt writing skill — one of nine skills bundled with this repository:
