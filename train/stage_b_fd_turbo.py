@@ -20,7 +20,7 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from train.wiring import STAGE_B_TODOS, format_plan, run_checks
-from vfm.schedule import fd_weight_for_k
+from vfm_fd.schedule import fd_weight_for_k
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -52,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
         f"queue_size={args.queue_size}  adapter_lr={args.adapter_lr}  lora_lr={args.lr_lora}",
         f"lambda_obs={args.lambda_obs}  real_stats={args.real_stats}  towers={args.towers or 'all'}",
         "Samples: z ~ q_phi, one NFE, frozen VAE decode, frozen towers, grad through the decode into the LoRA.",
-        "Loss: L_MF + lambda_obs * L_obs + L_KL + fd_weight * sum_i w_i FD_i.",
+        "Loss: vfm_nfe_loss + fd_weight * sum_i w_i FD_i. y stays the first frame.",
     )
     if args.check or not args.run:
         run_checks()

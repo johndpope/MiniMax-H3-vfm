@@ -75,6 +75,7 @@ class MultiTowerFD:
     ) -> dict:
         total = 0.0
         parts: dict[str, dict] = {}
+        pending: list[np.ndarray] = []
         missing = [spec.name for spec in self.towers if spec.name not in features_by_tower]
         if missing:
             raise KeyError(f"features missing for {missing}")
@@ -100,6 +101,8 @@ class MultiTowerFD:
                 "modality": spec.modality,
                 **aux,
             }
-            if commit:
+            pending.append(feats)
+        if commit:
+            for spec, feats in zip(self.towers, pending):
                 self.stats[spec.name].commit(feats)
         return {"loss": total, "towers": parts}

@@ -6,17 +6,17 @@ from pathlib import Path
 
 import numpy as np
 
-from vfm.adapter import (
+from vfm_fd.adapter import (
     apply_unconditional_mix,
     kl_standard_normal,
     reparameterize,
     unconditional_mask,
 )
-from vfm.components import verify_repo_layout
-from vfm.constants import TASK
-from vfm.ema import ParameterEMA
-from vfm.losses import observation_loss, total_loss
-from vfm.schedule import fd_weight_for_k, stage_a_ks
+from vfm_fd.components import verify_repo_layout
+from vfm_fd.constants import TASK
+from vfm_fd.ema import ParameterEMA
+from vfm_fd.losses import NFE_WEIGHTS, observation_loss, total_loss, vfm_nfe_loss
+from vfm_fd.schedule import fd_weight_for_k, stage_a_ks
 
 
 def run_selfcheck(root: Path | None = None) -> None:
@@ -48,18 +48,24 @@ def run_selfcheck(root: Path | None = None) -> None:
     if np.allclose(video, base) or np.allclose(audio, base + 3):
         raise AssertionError("alpha 1 must replace both streams")
 
-    try:
-        observation_loss({"identity": 1.0, "line": 1.0, "sync": 1.0, "fd": 1.0})
-    except ValueError:
-        pass
-    else:
-        raise AssertionError("L_obs accepted an FD term")
-    if observation_loss({"identity": 0.1, "line": 0.2, "sync": 0.3}) != 0.6:
-        raise AssertionError("observation_loss sum")
+    if NFE_WEIGHTS != {"mf": 0.5, "cos": 4.0, "std": 8.0, "obs": 4.0, "grad": 2.0}:
+        raise AssertionError(NFE_WEIGHTS)
+    clip = np.zeros((2, 3, 4, 5))
+    clip[:, :, 0] = 1.0
+    y = np.ones((2, 3, 5))
+    if observation_loss(clip, y) != 0.0:
+        raise AssertionError("first-frame observation should be 0 when A(x) == y")
+    obs = observation_loss(clip, np.zeros_like(y))
+    if abs(obs - float(np.linalg.norm(np.ones_like(y)))) > 1e-8:
+        raise AssertionError(obs)
+    nfe = vfm_nfe_loss(mf=1.0, cos=1.0, std=1.0, obs=obs, grad=1.0)
+    expected = 0.5 + 4.0 + 8.0 + 4.0 * obs + 2.0
+    if abs(nfe - expected) > 1e-8:
+        raise AssertionError(nfe)
 
-    if total_loss(l_mf=1.0, l_obs=2.0, l_kl=0.5, fd=10.0, fd_weight=0.0) != 3.5:
+    if total_loss(l_nfe=3.5, fd=10.0, fd_weight=0.0) != 3.5:
         raise AssertionError("Stage A must drop FD when fd_weight is 0")
-    if total_loss(l_mf=1.0, l_obs=2.0, l_kl=0.5, fd=10.0, fd_weight=1.0) != 13.5:
+    if total_loss(l_nfe=3.5, fd=10.0, fd_weight=1.0) != 13.5:
         raise AssertionError("Stage B FD weight")
 
     if stage_a_ks() != (4, 2):

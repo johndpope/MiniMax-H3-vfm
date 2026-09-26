@@ -4,8 +4,10 @@ Call ``surrogate(batch)`` to form the moments the loss sees, then
 ``commit(batch)`` with features that will not receive gradients. The
 population accumulated before this batch is the detached branch.
 
-EMA (β ≈ 0.999) blends batch mean and covariance into the previous state.
-The batch's share of that blend is ``1 - β``.
+EMA (β ≈ 0.999) uses the two-component mixture. ``μ`` in the covariance
+term is the EMA mean before the batch:
+
+``Σ ← β Σ + (1-β) Σ_b + β(1-β) (μ - μ_b)(μ - μ_b)ᵀ``
 
 Queue (8k–32k slots) uses the exact mixture of the detached buffer and the
 current batch. The batch's share is ``n_batch / (n_queue + n_batch)``.
@@ -59,14 +61,19 @@ class EMAFeatureStats:
             mu, sigma = mu_b, sigma_b
         else:
             beta = self.beta
-            mu = beta * self.mu + (1.0 - beta) * mu_b
-            sigma = beta * self.sigma + (1.0 - beta) * sigma_b
+            # μ is the EMA mean before this batch (not the updated mean).
+            mu_old = self.mu
+            delta = (mu_old - mu_b).reshape(-1, 1)
+            mu = beta * mu_old + (1.0 - beta) * mu_b
+            sigma = (
+                beta * self.sigma
+                + (1.0 - beta) * sigma_b
+                + (beta * (1.0 - beta)) * (delta @ delta.T)
+            )
         aux = {
             "population": "ema",
             "beta": self.beta,
             "count": self.count,
-            "grad_through": "current_batch",
-            "detached": "ema_state",
         }
         return mu, sigma, aux
 
@@ -114,8 +121,6 @@ class QueueFeatureStats:
             "population": "queue",
             "capacity": self.capacity,
             "count": n_q,
-            "grad_through": "current_batch",
-            "detached": "queue",
         }
         return mu, sigma, aux
 

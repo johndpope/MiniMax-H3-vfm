@@ -19,7 +19,7 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from train.wiring import STAGE_C_TODOS, format_plan, run_checks
-from vfm.constants import VAE_CLIP_LENGTH
+from vfm_fd.constants import VAE_CLIP_LENGTH
 
 
 def build_parser() -> argparse.ArgumentParser:

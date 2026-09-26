@@ -9,10 +9,6 @@ Conditioning is initial noise, not a sampling-path trick.
   x  = fθ(z, y, t≈1 → 0)              # frozen H3 DiT as the flow map
   x ≈ x0 in 1 (or few) NFE
 
-Few-NFE post-training (adapter vs LoRA vs FD-loss) is specified in
-docs/VFM_FD_REDESIGN.md and scaffolded under vfm/, fd_loss/, and train/.
-This file stays the toy falsifier. qφ stays a separate module from the DiT.
-
 This file is the cheapest falsifier of that claim:
 
   1. ToyPackedMap  — tiny packed AV velocity field with H3's two σ-shifts.

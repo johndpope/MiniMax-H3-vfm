@@ -11,6 +11,9 @@ in that same file. Modality 0 is video, 1 is audio.
 
 ``q_phi`` is a diagonal Gaussian, not ``DiagonalGaussianDistribution`` in
 ``Ref2VA/video_vae/vae_module.py`` (that is the VAE posterior).
+
+``text`` passed to ``sample`` is conditioning (Qwen / H3-Encoder states).
+The Stage A observation is ``y = A(x) = x[:, :, 0]``, not those states.
 """
 
 from __future__ import annotations

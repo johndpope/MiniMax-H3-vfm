@@ -19,7 +19,8 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from train.wiring import STAGE_A_TODOS, format_plan, run_checks
-from vfm.schedule import fd_weight_for_k, stage_a_ks
+from vfm_fd.losses import NFE_WEIGHTS
+from vfm_fd.schedule import fd_weight_for_k, stage_a_ks
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -54,9 +55,11 @@ def main(argv: list[str] | None = None) -> int:
     notes = (
         f"K={args.k}  fd_weight={fd_weight}  alpha={args.alpha}",
         f"adapter lr={args.lr_adapter}  lora lr={args.lr_lora}  rank={args.lora_rank}",
-        f"lambda_obs={args.lambda_obs}  kl_video={args.kl_video}  kl_audio={args.kl_audio}",
+        f"kl_video={args.kl_video}  kl_audio={args.kl_audio}",
         f"theta EMA beta={args.ema_beta}  ref2va={args.ref2va_root}",
-        "Loss: L_MF + lambda_obs * L_obs(identity, line, sync) + L_KL. No FD.",
+        "Objective: vfm_nfe_loss "
+        + " ".join(f"{name}={weight}" for name, weight in NFE_WEIGHTS.items())
+        + ". y = A(x) = x[:,:,0]. Text is conditioning. fd_weight stays 0. Not endpoint vfm_loss.",
     )
     if args.check or not args.run:
         run_checks()
@@ -67,7 +70,7 @@ def main(argv: list[str] | None = None) -> int:
     print(format_plan("Stage A — constraint lock", STAGE_A_TODOS, notes))
     raise SystemExit(
         "TODO: Stage A training is not implemented. "
-        "Wire H3NoiseAdapter + RealH3Map as listed above. Do not download weights."
+        "Use vfm_nfe_loss and y = x[:,:,0]. Do not download weights."
     )
 
 
